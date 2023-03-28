@@ -1,0 +1,14 @@
+[Unit]
+Description=Reverse Proxy in Lisp
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+ExecStart=$PROXYLEX_PATH
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
