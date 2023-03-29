@@ -1,6 +1,11 @@
 # proxylex
 A reverse proxy and load balancer written in Lisp. Customizable and lightweight
 
+## Dependencies
+You need to have Steel Bank Common Lisp (SBCL) installed in order to compile the Lisp code and run the scripts.
+
+You can install it from the official website (http://www.sbcl.org/platform-table.html) or through your package manager, depending on your operating system.
+
 ## How to run as a systemd service on Linux
 1. Make `proxylex.sh` executable 'chmod +x proxylex.sh',
 1.1 if necessary, adjust path to proxylex-main.lisp
