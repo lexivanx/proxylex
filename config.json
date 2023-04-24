@@ -1,0 +1,5 @@
+{
+    "backend_servers": ["http://localhost:8080", "http://localhost:8081"],
+    "proxy_port": 8082,
+    "request_rate": 10
+}

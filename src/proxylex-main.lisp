@@ -3,15 +3,22 @@
 ;;;; For intro to Lisp check the docs
 ;;;; common-lisp.net/documentation
 
-(ql:quickload '("usocket" "drakma" "local-time" "cl-cache" "bordeaux-threads"))
+(ql:quickload '("usocket" "drakma" "local-time" "cl-cache" "bordeaux-threads" "cl-json"))
 
 (defpackage :reverse-proxy
-  (:use :cl :usocket :drakma :local-time :cl-cache :bordeaux-threads))
+  (:use :cl :usocket :drakma :local-time :cl-cache :bordeaux-threads :cl-json))
 
 (in-package :reverse-proxy)
 
-;;; List of backend servers
-(defvar *backend-servers* '("http://localhost:8080" "http://localhost:8081"))
+(defun read-config (filename)
+  (with-open-file (in filename)
+    (json:decode-json in)))
+
+;;; Read configuration from the JSON file and store the values in global variables
+(defvar *config* (read-config "config.json"))
+(defvar *backend-servers* (gethash "backend_servers" *config*))
+(defvar *proxy-port* (gethash "proxy_port" *config*))
+(defvar *request-rate* (gethash "request_rate" *config*))
 
 ;;; Select server randomly from backend-servers variable
 (defun choose-backend ()
@@ -41,7 +48,6 @@
     (close client-stream)))
 
 ;;; Rate limiting
-(defvar *request-rate* 10) ; 10 requests per minute
 (defvar *client-request-count* (make-hash-table :test 'equal))
 
 (defun check-rate-limit (client-ip)
@@ -125,11 +131,10 @@
 
 ;;; Init reverse proxy on port 8082
 (defun main ()
-  (let ((port 8082))
-    (format t "Reverse proxy started on port ~A.~%" port)
-    ;; Or call start-proxy-with-caching
-    ;; for caching functionality 
-    (start-proxy port)))
+  (format t "Reverse proxy started on port ~A.~%" *proxy-port*)
+  ;; Or call start-proxy-with-caching
+  ;; for caching functionality 
+  (start-proxy *proxy-port*))
 
 ;;; Call main
 (main)
