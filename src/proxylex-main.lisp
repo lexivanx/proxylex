@@ -3,10 +3,10 @@
 ;;;; For intro to Lisp check the docs
 ;;;; common-lisp.net/documentation
 
-(ql:quickload '("usocket" "drakma" "local-time" "cl-cache"))
+(ql:quickload '("usocket" "drakma" "local-time" "cl-cache" "bordeaux-threads"))
 
 (defpackage :reverse-proxy
-  (:use :cl :usocket :drakma :local-time :cl-cache))
+  (:use :cl :usocket :drakma :local-time :cl-cache :bordeaux-threads))
 
 (in-package :reverse-proxy)
 
@@ -104,10 +104,11 @@
   (let ((server-socket (socket-listen usocket:*wildcard-host* port :reuse-address t)))
     (unwind-protect
          (loop (let ((client-socket (socket-accept server-socket)))
-                 (handler-case
-                     (let ((client-stream (socket-stream client-socket)))
-                       (handle-client client-stream))
-                   (error (c) (format t "Error: ~A~%" c)))))
+                 (bt:make-thread (lambda ()
+                                   (handler-case
+                                       (let ((client-stream (socket-stream client-socket)))
+                                         (handle-client client-stream))
+                                     (error (c) (format t "Error: ~A~%" c)))))))
       (socket-close server-socket))))
 
 ;;; Identical to start-proxy, with caching
@@ -115,10 +116,11 @@
   (let ((server-socket (socket-listen usocket:*wildcard-host* port :reuse-address t)))
     (unwind-protect
          (loop (let ((client-socket (socket-accept server-socket)))
-                 (handler-case
-                     (let ((client-stream (socket-stream client-socket)))
-                       (handle-client-with-caching client-stream))
-                   (error (c) (format t "Error: ~A~%" c)))))
+                 (bt:make-thread (lambda ()
+                                   (handler-case
+                                       (let ((client-stream (socket-stream client-socket)))
+                                         (handle-client-with-caching client-stream))
+                                     (error (c) (format t "Error: ~A~%" c)))))))
       (socket-close server-socket))))
 
 ;;; Init reverse proxy on port 8082
