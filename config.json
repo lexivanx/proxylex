@@ -1,5 +1,7 @@
 {
-    "backend_servers": ["http://localhost:8080", "http://localhost:8081"],
-    "proxy_port": 8082,
-    "request_rate": 10
-}
+    "backend_servers": ["https://localhost:8080", "https://localhost:8081"],
+    "proxy_port": 443,
+    "request_rate": 10,
+    "certificate_path": "/path/to/your/certificate.pem",
+    "private_key_path": "/path/to/your/private-key.pem"
+}  

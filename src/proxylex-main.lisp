@@ -3,10 +3,10 @@
 ;;;; For intro to Lisp check the docs
 ;;;; common-lisp.net/documentation
 
-(ql:quickload '("usocket" "drakma" "local-time" "cl-cache" "bordeaux-threads" "cl-json"))
+(ql:quickload '("usocket" "drakma" "local-time" "cl-cache" "bordeaux-threads" "cl-json" "cl+ssl"))
 
 (defpackage :reverse-proxy
-  (:use :cl :usocket :drakma :local-time :cl-cache :bordeaux-threads :cl-json))
+  (:use :cl :usocket :drakma :local-time :cl-cache :bordeaux-threads :cl-json :cl+ssl))
 
 (in-package :reverse-proxy)
 
@@ -19,6 +19,8 @@
 (defvar *backend-servers* (gethash "backend_servers" *config*))
 (defvar *proxy-port* (gethash "proxy_port" *config*))
 (defvar *request-rate* (gethash "request_rate" *config*))
+(defvar *certificate-path* (gethash "certificate_path" *config*))
+(defvar *private-key-path* (gethash "private_key_path" *config*))
 
 ;;; Select server randomly from backend-servers variable
 (defun choose-backend ()
@@ -40,8 +42,17 @@
                    (return (values 503 nil "Error: backend server unavailable."))
                    (format t "Error: ~A~% Retrying...~%" e))))))
 
+;;; Helper function to upgrade client connection to SSL
+(defun upgrade-client-stream-to-ssl (client-stream)
+  (let* ((ssl-context (ssl:make-ssl-client-context))
+         (ssl-stream (ssl:make-ssl-stream client-stream ssl-context)))
+    (ssl:load-certificate-chain-from-file ssl-context *certificate-path*)
+    (ssl:load-private-key-from-file ssl-context *private-key-path*)
+    (setf (usocket:stream-type client-stream) ssl-stream)))
+
 ;;; Handle client connection and send response to client
 (defun handle-client (client-stream)
+  (upgrade-client-stream-to-ssl client-stream)
   (let ((status nil)
         (headers nil)
         (body nil))
@@ -100,6 +111,7 @@
 
 ;;; Like handle-client with added caching
 (defun handle-client-with-caching (client-stream)
+  (upgrade-client-stream-to-ssl client-stream)
   (let ((status nil)
         (headers nil)
         (body nil))
