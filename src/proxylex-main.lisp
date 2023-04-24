@@ -26,12 +26,19 @@
     (nth index *backend-servers*)))
 
 ;;; Process request via Drakma HTTP client
-(defun process-request (request-stream)
-  (let* ((request (drakma:http-request (concatenate 'string (choose-backend) (read-line request-stream)) :stream request-stream))
-         (status (drakma:http-response-status request))
-         (headers (drakma:http-response-headers request))
-         (body (drakma:http-response-body request)))
-    (values status headers body)))
+(defun process-request (request-stream &optional (retries 3))
+  (loop repeat retries
+        for attempt from 1
+        do (handler-case
+               (let* ((request (drakma:http-request (concatenate 'string (choose-backend) (read-line request-stream)) :stream request-stream))
+                      (status (drakma:http-response-status request))
+                      (headers (drakma:http-response-headers request))
+                      (body (drakma:http-response-body request)))
+                 (return (values status headers body)))
+             (drakma:http-condition (e)
+               (if (= attempt retries)
+                   (return (values 503 nil "Error: backend server unavailable."))
+                   (format t "Error: ~A~% Retrying...~%" e))))))
 
 ;;; Handle client connection and send response to client
 (defun handle-client (client-stream)
